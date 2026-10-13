@@ -100,7 +100,8 @@ details p{margin:8px 0 0;line-height:1.6}
 .switch[aria-checked="false"]::after{right:37px;top:21px}
 .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
 
-label.f{display:grid;gap:8px;color:var(--muted);font-size:15px}
+label.f{display:grid;gap:8px;color:var(--muted);font-size:15px;min-width:0}
+label.f>span{white-space:nowrap}
 .field,select.field{background:var(--field);border:1px solid var(--line);border-radius:16px;padding:14px 16px;color:var(--fg);font-size:17px;width:100%;min-width:0;font-family:inherit;appearance:none;-webkit-appearance:none}
 select.field{background-image:linear-gradient(45deg,transparent 50%,var(--fg) 50%),linear-gradient(135deg,var(--fg) 50%,transparent 50%);background-position:calc(100% - 22px) 50%,calc(100% - 16px) 50%;background-size:6px 6px;background-repeat:no-repeat;padding-right:40px}
 .field::placeholder{color:#6f7c99}
@@ -232,7 +233,7 @@ nav.tabs button[aria-selected="true"] svg{stroke:var(--blue-hi)}
       <p class="desc">마트·전화 주문 등 별도로 구매한 재료가 도착했을 때 등록해 주세요.</p>
       <label class="f">식재료<select class="field" id="mItem"></select></label>
       <div class="two">
-        <label class="f">입고 수량 (<span id="mUnit">kg</span>)<input class="field" id="mQty" type="number" step="0.1" min="0" inputmode="decimal" placeholder="예: 6"></label>
+        <label class="f"><span>입고 수량 (<span id="mUnit">kg</span>)</span><input class="field" id="mQty" type="number" step="0.1" min="0" inputmode="decimal" placeholder="예: 6"></label>
         <label class="f">매입 금액 (원)<input class="field" id="mAmt" type="number" min="0" inputmode="numeric" placeholder="선택 입력"></label>
       </div>
       <details><summary>수량 입력 안내</summary><p>실제로 받은 양을 재고 단위로 적어 주세요. 1kg 팩 6개를 받았다면 6을 입력합니다. 주문해 둔 재료라면 입고 대기 목록에서 자동으로 빠져요.</p></details>
