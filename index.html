@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101a2c">
+<style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style>
+</head>
+<body>
+<title>요리온</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: dark navy phone app, rounded glass cards, horizontal ingredient carousels, floating bottom tab bar (copied from 요리온) */
+:root{
+  --bg:#0c1322; --bg-top:#18223b; --card:#1a2440; --card-2:#151e36; --line:#2d3a5a; --field:#121a2e;
+  --fg:#f3f6fc; --muted:#9ba8c4; --brand:#9db8ff; --blue:#4f7cf0; --blue-hi:#6f9bff; --blue-lo:#3f68dc;
+  --gold:#f0cd8a; --gold-bg:#3a2f1c; --gold-line:#9b7a3e; --ok:#7fe0ab; --ok-bg:#183326; --warn:#ff9f87;
+  --hero-a:#e2eeff; --hero-b:#b9d3fb; --hero-fg:#132040; --hero-num:#2a5ee6;
+  --nav:#17213a; --nav-active:#2a3d6c;
+  --sans:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:linear-gradient(180deg,var(--bg-top) 0,var(--bg) 520px) var(--bg);color:var(--fg);font-family:var(--sans);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--blue-hi);outline-offset:2px}
+
+.app{max-width:520px;margin:0 auto;padding-inline:18px;padding-block:14px 120px}
+.top{display:flex;align-items:center;gap:12px}
+.logo{font-weight:800;font-size:21px;color:var(--brand);letter-spacing:-.02em;display:flex;align-items:center;gap:4px}
+.logo i{width:7px;height:7px;border-radius:50%;background:var(--blue-hi);display:inline-block;margin-top:8px}
+.store{color:var(--muted);font-size:14px;word-spacing:4px}
+.help{margin-left:auto;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--fg);font-size:19px;cursor:pointer}
+
+.view{display:grid;gap:18px;padding-top:18px}
+.titlebar{display:grid;gap:6px}
+.titleline{display:flex;align-items:center;gap:14px}
+h1{font-size:31px;font-weight:800;letter-spacing:-.03em;margin:0;line-height:1.2}
+.badge{width:46px;height:46px;border-radius:14px;background:linear-gradient(145deg,#4a64b0,#2b3f7a);display:grid;place-items:center;color:#eaf0ff;font-size:20px;transform:rotate(-6deg);box-shadow:0 6px 18px rgba(30,50,110,.5),inset 0 1px 0 rgba(255,255,255,.18)}
+.lead{color:var(--muted);font-size:16px;margin:0}
+.daterow{display:flex;justify-content:space-between;align-items:center}
+.date{color:var(--muted);font-size:17px}
+.ghost{border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--fg);border-radius:999px;padding:10px 18px;font-size:16px;cursor:pointer;display:flex;gap:8px;align-items:center}
+
+.card{background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);border-radius:26px;padding:20px;display:grid;gap:12px;min-width:0}
+.card h2{font-size:20px;font-weight:800;margin:0;letter-spacing:-.02em}
+.sec{display:flex;justify-content:space-between;align-items:baseline;margin-top:4px}
+.sec h2{font-size:21px;font-weight:800;margin:0;letter-spacing:-.02em}
+.sec small{color:var(--muted);font-size:14px}
+.desc{color:var(--muted);font-size:15px;margin:0}
+
+.hero{background:linear-gradient(135deg,var(--hero-a),var(--hero-b));color:var(--hero-fg);border-radius:26px;padding:20px 22px;position:relative;overflow:hidden}
+.hero p{margin:0}
+.hero .big{font-size:21px;font-weight:800;line-height:1.35;letter-spacing:-.02em}
+.hero .big b{color:var(--hero-num);font-size:28px}
+.hero .sub{font-size:14px;opacity:.75;margin-top:6px}
+.hero .box{position:absolute;right:18px;top:16px;font-size:52px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.2))}
+.hero .check{position:absolute;right:12px;top:8px;width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:15px;border:2px solid #fff}
+
+.carousel{display:grid;grid-auto-flow:column;grid-auto-columns:calc(50% - 6px);gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:4px;scrollbar-width:none}
+.carousel::-webkit-scrollbar{display:none}
+.ing{scroll-snap-align:start;background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);border-radius:24px;padding:16px 14px;display:grid;gap:10px;min-width:150px}
+.ing .head{display:flex;gap:10px;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.plate{width:46px;height:46px;flex:none;border-radius:50%;background:radial-gradient(circle at 40% 35%,#2b3654,#121a2e);display:grid;place-items:center;font-size:26px;box-shadow:0 4px 10px rgba(0,0,0,.35)}
+.ing .nm{font-weight:800;font-size:19px;letter-spacing:-.02em}
+.pill{display:inline-block;font-size:13px;font-weight:500;padding:2px 10px;border-radius:999px;border:1px solid var(--gold-line);background:var(--gold-bg);color:var(--gold);white-space:nowrap}
+.pill.ok{border-color:#2f6b4c;background:var(--ok-bg);color:var(--ok)}
+.pill.soft{border-color:var(--line);background:rgba(255,255,255,.04);color:var(--fg)}
+.lbl{color:var(--muted);font-size:14px}
+.bignum{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1.1}
+.bignum small{font-size:17px;font-weight:500;color:var(--muted);margin-left:3px}
+.kv{display:flex;justify-content:space-between;font-size:15px;gap:6px}
+.kv span:first-child{color:var(--muted)} .kv span:last-child{font-weight:700}
+.split{border-top:1px solid var(--line);padding-top:10px;display:grid;gap:4px}
+.eta{color:var(--muted);font-size:14px;line-height:1.4}
+
+.btn{border:0;border-radius:18px;padding:14px 16px;font-size:16px;font-weight:700;cursor:pointer;color:#fff;background:linear-gradient(180deg,var(--blue-hi),var(--blue-lo));box-shadow:inset 0 1px 0 rgba(255,255,255,.25);display:flex;gap:8px;align-items:center;justify-content:center;width:100%}
+.btn.sub{background:#253357;border:1px solid #3a4b78;box-shadow:none}
+.btn:disabled{opacity:.5;cursor:default}
+
+.dashed{border:1.5px dashed var(--line);border-radius:22px;padding:16px;display:flex;gap:14px;align-items:center}
+.dashed .ic{font-size:36px}
+.dashed p{margin:0} .dashed .t{font-size:16px} .dashed .s{color:var(--muted);font-size:14px}
+.wait{display:grid;gap:10px}
+.waitrow{display:flex;gap:12px;align-items:center;justify-content:space-between}
+
+details{color:var(--muted);font-size:15px}
+details summary{cursor:pointer;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▶ ";font-size:12px}
+details[open] summary::before{content:"▼ "}
+details p{margin:8px 0 0;line-height:1.6}
+.card.fold{padding:16px 20px}
+
+.switch{width:72px;height:56px;border-radius:22px;background:linear-gradient(180deg,var(--blue-hi),var(--blue-lo));border:0;position:relative;cursor:pointer;flex:none}
+.switch::after{content:"";position:absolute;width:26px;height:26px;border-radius:50%;background:#fff;top:9px;right:9px;transition:all .2s}
+.switch[aria-checked="false"]{background:#2a3555}
+.switch[aria-checked="false"]::after{right:37px;top:21px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+
+label.f{display:grid;gap:8px;color:var(--muted);font-size:15px}
+.field,select.field{background:var(--field);border:1px solid var(--line);border-radius:16px;padding:14px 16px;color:var(--fg);font-size:17px;width:100%;min-width:0;font-family:inherit;appearance:none;-webkit-appearance:none}
+select.field{background-image:linear-gradient(45deg,transparent 50%,var(--fg) 50%),linear-gradient(135deg,var(--fg) 50%,transparent 50%);background-position:calc(100% - 22px) 50%,calc(100% - 16px) 50%;background-size:6px 6px;background-repeat:no-repeat;padding-right:40px}
+.field::placeholder{color:#6f7c99}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+.scan{border:1.5px dashed #4a64b0;background:linear-gradient(180deg,#1d2a4d,#172240);border-radius:26px;padding:20px;display:grid;gap:12px}
+.scan .hd{display:flex;gap:12px;align-items:center}
+.scan .cam{width:46px;height:46px;border-radius:14px;background:linear-gradient(145deg,#4a64b0,#2b3f7a);display:grid;place-items:center;font-size:22px;flex:none}
+.scan h2{font-size:19px;margin:0;font-weight:800}
+.scan .two button{width:100%}
+.shot{display:flex;gap:12px;align-items:center}
+.shot img{width:64px;height:64px;object-fit:cover;border-radius:14px;border:1px solid var(--line)}
+.stat{font-size:14px;color:var(--muted)} .stat.err{color:var(--warn)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--muted);border-top-color:transparent;border-radius:50%;vertical-align:-2px;margin-right:6px}
+@media (prefers-reduced-motion:no-preference){.spin{animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}}
+
+.line{display:grid;gap:10px;padding:14px 0;border-top:1px solid var(--line)}
+.line .src{font-size:14px;color:var(--muted)}
+.rec{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.rec:first-child{border-top:0}
+.rec .s{color:var(--muted);font-size:13px}
+.empty{color:var(--muted);text-align:center;padding:22px 0 8px}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);padding:22px 8px}
+.stats div{text-align:center;display:grid;gap:4px;border-left:1px solid var(--line)}
+.stats div:first-child{border-left:0}
+.stats span{color:var(--muted);font-size:14px}
+.stats b{font-size:30px;font-weight:800;color:#c9d7ff}
+.stats b small{font-size:17px;margin-left:2px}
+.chat{background:#283659;border-radius:18px;padding:12px 16px;font-size:15px;justify-self:start;max-width:92%}
+.chat.me{justify-self:end;background:#22305a;border:1px solid #3a4b78}
+.ask{display:grid;grid-template-columns:1fr auto;gap:10px}
+.ask .btn{width:auto;padding:0 22px;border-radius:18px}
+
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--nav);border:1px solid var(--line);border-bottom:0;border-radius:32px 32px 0 0;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-width:560px;margin:0 auto;box-shadow:0 -10px 30px rgba(0,0,0,.35)}
+nav.tabs button{background:none;border:0;color:#b8c3da;border-radius:24px;padding:10px 4px;display:grid;justify-items:center;gap:4px;font-size:15px;cursor:pointer}
+nav.tabs svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+nav.tabs button[aria-selected="true"]{background:var(--nav-active);color:#fff;font-weight:700}
+nav.tabs button[aria-selected="true"] svg{stroke:var(--blue-hi)}
+
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(5,9,18,.6);display:grid;align-items:end}
+.sheet .in{background:var(--card);border-top:1px solid var(--line);border-radius:28px 28px 0 0;padding:24px 20px calc(20px + env(safe-area-inset-bottom,0px));max-width:560px;margin:0 auto;width:100%;display:grid;gap:12px}
+.sheet h2{margin:0;font-size:20px}
+.sheet p{margin:0;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(110px + env(safe-area-inset-bottom,0px));background:#eef3ff;color:#132040;font-weight:700;padding:10px 18px;border-radius:999px;font-size:15px;z-index:30;white-space:nowrap}
+
+.top .store{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.top .help{margin-left:0;flex:none}
+.out{padding:8px 14px;font-size:14px;flex:none}
+.auth{max-width:520px;margin:0 auto;padding-inline:18px;padding-block:36px 48px;display:grid;gap:18px}
+.auth .logo{font-size:32px}
+.auth .logo i{width:9px;height:9px;margin-top:13px}
+.auth .card form,.auth form.card{gap:14px}
+.center{justify-content:center;width:100%}
+.demo{display:grid;gap:10px}
+.demo button{display:flex;justify-content:space-between;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--fg);border-radius:18px;padding:12px 16px;font-size:16px;cursor:pointer;text-align:left}
+.demo button small{color:var(--muted);font-size:14px}
+</style>
+
+<div class="auth" id="auth" hidden>
+  <div class="logo">요리온<i></i></div>
+  <p class="lead">우리 가게 재고와 발주를 한 곳에서 챙겨요.</p>
+  <form class="card" id="loginForm">
+    <h2 id="authTitle">사장님 로그인</h2>
+    <label class="f" id="storeWrap" hidden>가게 이름<input class="field" id="aStore" autocomplete="organization" placeholder="예: 경성식당"></label>
+    <label class="f">아이디<input class="field" id="aId" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="영문 소문자, 숫자"></label>
+    <label class="f">비밀번호<input class="field" id="aPw" type="password" autocomplete="current-password" placeholder="비밀번호"></label>
+    <label class="f" id="pw2Wrap" hidden>비밀번호 확인<input class="field" id="aPw2" type="password" autocomplete="new-password" placeholder="한 번 더 입력"></label>
+    <p class="stat err" id="aErr" role="alert" hidden></p>
+    <button class="btn" type="submit" id="aSubmit">로그인</button>
+    <button class="ghost center" type="button" id="aMode">처음이신가요? 가게 등록하기</button>
+  </form>
+  <div class="card">
+    <h2>체험용 계정</h2>
+    <p class="desc">눌러서 입력칸에 채우세요. 가게마다 재고와 주문 기록이 따로 저장돼요.</p>
+    <div class="demo" id="demoList"></div>
+  </div>
+  <p class="desc">체험용이라 데이터가 이 기기의 브라우저에만 저장돼요. 실제 서비스 보안 로그인은 아니에요.</p>
+</div>
+
+<div class="app" id="app" hidden>
+  <div class="top"><span class="logo">요리온<i></i></span><span class="store" id="storeName">경성식당</span><button class="ghost out" id="logoutBtn" type="button">로그아웃</button><button class="help" id="helpBtn" aria-label="도움말">?</button></div>
+  <section class="view" id="v-today"></section>
+  <section class="view" id="v-stock" hidden></section>
+  <section class="view" id="v-in" hidden>
+    <div class="titlebar"><div class="titleline"><h1>입고 기록</h1><span class="badge">＋</span></div><p class="lead">들어온 재료를 재고에 더해 주세요.</p></div>
+
+    <div class="scan" id="scanCard">
+      <div class="hd"><span class="cam">📷</span><div><h2>명세서 사진으로 입력</h2><p class="desc">거래명세서나 영수증을 찍으면 재료·수량·금액을 채워드려요.</p></div></div>
+      <div class="two"><button class="btn" id="shootBtn" type="button">사진 찍기</button><button class="btn sub" id="demoBtn" type="button">예시로 체험</button></div>
+      <input id="photo" type="file" accept="image/*" capture="environment" hidden>
+      <div class="shot" id="shot" hidden><img id="shotImg" alt="찍은 명세서"><span class="stat" id="stat"></span></div>
+    </div>
+
+    <form class="card" id="review" hidden>
+      <div class="row"><h2>사진에서 읽은 내용</h2><span class="pill soft" id="reviewSrc">AI 인식</span></div>
+      <p class="desc">틀린 곳만 고친 뒤 반영하세요.</p>
+      <label class="f">구매처<input class="field" id="rSupplier"></label>
+      <div id="rLines"></div>
+      <div class="row"><span class="lbl">합계</span><b class="num" id="rTotal"></b></div>
+      <div class="two"><button class="btn sub" type="button" id="cancelBtn">취소</button><button class="btn" type="submit">모두 재고에 반영</button></div>
+    </form>
+
+    <form class="card" id="manual">
+      <h2>시스템 외 구매 입고 등록</h2>
+      <p class="desc">마트·전화 주문 등 별도로 구매한 재료가 도착했을 때 등록해 주세요.</p>
+      <label class="f">식재료<select class="field" id="mItem"></select></label>
+      <div class="two">
+        <label class="f">입고 수량 (<span id="mUnit">kg</span>)<input class="field" id="mQty" type="number" step="0.1" min="0" inputmode="decimal" placeholder="예: 6"></label>
+        <label class="f">매입 금액 (원)<input class="field" id="mAmt" type="number" min="0" inputmode="numeric" placeholder="선택 입력"></label>
+      </div>
+      <details><summary>수량 입력 안내</summary><p>실제로 받은 양을 재고 단위로 적어 주세요. 1kg 팩 6개를 받았다면 6을 입력합니다. 주문해 둔 재료라면 입고 대기 목록에서 자동으로 빠져요.</p></details>
+      <button class="btn" type="submit">확인하고 재고에 반영</button>
+    </form>
+
+    <div class="card"><details id="recBox" open><summary>최근 기록</summary><div id="records"></div></details></div>
+  </section>
+  <section class="view" id="v-report" hidden></section>
+</div>
+
+<nav class="tabs" role="tablist" id="tabs" hidden>
+  <button role="tab" data-v="today" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>오늘</button>
+  <button role="tab" data-v="stock" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>재고</button>
+  <button role="tab" data-v="in" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/></svg>입고</button>
+  <button role="tab" data-v="report" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 20h16M7 16v-4M12 16V5M17 16v-7"/></svg>리포트</button>
+</nav>
+
+<div class="sheet" id="help" hidden><div class="in">
+  <h2>요리온 사용법</h2>
+  <p class="lbl" id="who"></p>
+  <p>오늘 탭에서 발주가 필요한 재료를 확인하고 주문을 등록하세요. 재료가 도착하면 입고 탭에서 등록하면 재고에 더해집니다. 명세서 사진을 찍으면 수량과 금액을 자동으로 채워드려요.</p>
+  <p>체험용이라 판매자료와 리포트 수치는 가상 데이터예요.</p>
+  <button class="btn" id="helpClose" type="button">닫기</button>
+</div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const KST=()=>new Date(Date.now()+9*3600e3);
+const WD="일월화수목금토";
+const md=d=>`${d.getUTCMonth()+1}월 ${d.getUTCDate()}일 (${WD[d.getUTCDay()]})`;
+const plusDays=n=>new Date(KST().getTime()+n*86400e3);
+const won=n=>(Math.round(n)||0).toLocaleString("ko-KR")+"원";
+const q1=n=>Math.round(n*10)/10;
+const h=(tag,attrs={},...kids)=>{const n=document.createElement(tag);for(const k in attrs){if(k==="class")n.className=attrs[k];else if(k.startsWith("on"))n[k]=attrs[k];else n.setAttribute(k,attrs[k]);}kids.flat().forEach(c=>c!=null&&n.append(c));return n;};
+
+/* 가게별 기본 식재료: [id, 이름, 이모지, 단위, 현재 재고, 주문 기준, 안전재고, 납품 일수, 일평균 사용량] */
+const MENUS={
+  gyeongsung:[
+    ["pork","돼지고기","🥩","kg",3.2,5,1,2,1.5],["kimchi","김치","🥘","kg",2.1,3.4,.8,2,1.2],["tofu","두부","🧈","모",6,10,3,1,5],
+    ["onion","양파","🧅","kg",12,8,2,1,2.5],["scallion","대파","🌿","단",5,4,1,1,1.5],["rice","쌀","🍚","kg",18,20,5,3,6],
+    ["egg","계란","🥚","판",4,3,1,2,1],["pepper","고춧가루","🌶️","kg",2.5,1.5,.5,3,.3],["oil","식용유","🫗","L",9,6,2,2,1.2],
+    ["zucchini","애호박","🥒","개",4,6,2,1,3]],
+  seokbunsik:[
+    ["tteok","떡볶이떡","🍡","kg",6,8,2,2,3.5],["odeng","어묵","🍢","kg",7,5,1,1,2],["gim","김밥김","🍙","봉",3,4,1,2,1],
+    ["danmuji","단무지","🥒","봉",8,5,2,2,1.5],["dangmyeon","당면","🍜","kg",2,3,1,2,.8],["gochujang","떡볶이 고추장","🌶️","kg",5,3,1,3,.5],
+    ["frymix","튀김가루","🥣","kg",10,8,2,2,2],["ramen","라면사리","🍜","봉",40,30,10,1,12],["egg","계란","🥚","판",2,3,1,2,1],
+    ["oil","식용유","🫗","L",12,8,3,2,2.5],["scallion","대파","🌿","단",4,3,1,1,1]],
+  gukbap:[
+    ["bone","사골","🦴","kg",18,25,6,2,9],["sundae","순대","🌭","kg",5,6,1.5,2,2.5],["pork","수육용 돼지고기","🥩","kg",8,6,2,2,3],
+    ["rice","쌀","🍚","kg",30,25,8,3,10],["buchu","부추","🌿","단",3,5,2,1,2.5],["scallion","대파","🌿","단",8,6,2,1,3],
+    ["kkakdugi","깍두기","🥘","kg",6,5,1.5,2,2],["saeujeot","새우젓","🦐","kg",1.5,1,.3,3,.2],["salt","소금","🧂","kg",5,3,1,3,.4],
+    ["garlic","마늘","🧄","kg",2,1.5,.5,2,.5]],
+  _:[
+    ["rice","쌀","🍚","kg",10,10,3,3,3],["oil","식용유","🫗","L",6,5,2,2,1],["egg","계란","🥚","판",3,3,1,2,1],
+    ["onion","양파","🧅","kg",6,5,2,1,1.5],["scallion","대파","🌿","단",3,3,1,1,1]]
+};
+const SEED=id=>({v:2,pos:true,items:(MENUS[id]||MENUS._).map(([id,name,emoji,unit,stock,orderPoint,safety,lead,daily])=>({id,name,emoji,unit,stock,orderPoint,safety,lead,daily})),orders:[],records:[]});
+let S=SEED(),USER=null;
+const save=()=>{if(!USER)return;try{localStorage.setItem("yorion-data-"+USER,JSON.stringify(S))}catch(e){}};
+const pending=it=>S.orders.filter(o=>o.id===it.id).reduce((a,o)=>a+o.qty,0);
+const needs=it=>it.stock+pending(it)<it.orderPoint;
+const recQty=it=>Math.max(1,Math.round(it.orderPoint+it.safety+it.lead*it.daily-it.stock-pending(it)));
+function toast(t){const e=$("toast");e.textContent=t;e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,2200);}
+const head=it=>h("div",{class:"head"},h("span",{class:"plate"},it.emoji),h("div",{style:"display:grid;gap:6px;min-width:0"},h("span",{class:"nm"},it.name),needs(it)?h("span",{class:"pill"},"발주 필요"):h("span",{class:"pill ok"},"충분")));
+
+/* 오늘 */
+function renderToday(){
+  const v=$("v-today"),list=S.items.filter(needs);
+  const car=h("div",{class:"carousel"},list.map(it=>h("div",{class:"ing"},head(it),
+    h("div",{class:"lbl"},"권장 발주량"),h("div",{class:"bignum num"},recQty(it),h("small",{},it.unit)),
+    h("div",{class:"split"},h("div",{class:"kv"},h("span",{},"현재 재고"),h("span",{class:"num"},q1(it.stock)+it.unit)),h("div",{class:"kv"},h("span",{},"주문 기준"),h("span",{class:"num"},it.orderPoint+it.unit))),
+    h("div",{class:"eta"},`납품 ${it.lead}일`,h("br"),md(plusDays(it.lead))+" 예정"),
+    h("button",{class:"btn",type:"button",onclick:()=>{S.orders.push({id:it.id,qty:recQty(it),eta:md(plusDays(it.lead))});save();renderAll();toast(`${it.name} 주문을 등록했어요`);}},"🛒 주문 등록"))));
+  const wait=S.orders.length?h("div",{class:"card wait"},S.orders.map((o,i)=>{const it=S.items.find(x=>x.id===o.id);return h("div",{class:"waitrow"},h("div",{},h("b",{},`${it?.name} ${o.qty}${it?.unit}`),h("div",{class:"lbl"},o.eta+" 도착 예정")),h("button",{class:"ghost",type:"button",onclick:()=>{if(it){it.stock=q1(it.stock+o.qty);S.records.unshift({date:md(KST()),name:it.name,qty:o.qty,unit:it.unit,amt:0,src:"주문 입고"});}S.orders.splice(i,1);save();renderAll();toast("입고 처리했어요");}},"도착"))}))
+    :h("div",{class:"dashed"},h("span",{class:"ic"},"📦"),h("div",{},h("p",{class:"t"},"등록된 주문이 없어요."),h("p",{class:"s"},"발주한 재료가 여기에서 확인돼요.")));
+  v.replaceChildren(
+    h("div",{class:"titlebar"},h("div",{class:"daterow"},h("span",{class:"date"},md(KST())),h("button",{class:"ghost",type:"button",onclick:()=>{S=SEED(USER);save();renderAll();toast("처음 상태로 돌렸어요");}},"↻ 초기화")),h("div",{class:"titleline"},h("h1",{},"오늘 챙길 발주"),h("span",{class:"badge"},"✦"))),
+    h("div",{class:"hero"},h("span",{class:"box"},"📦"),h("span",{class:"check"},"✓"),list.length?h("p",{class:"big"},"지금 발주가 필요한 재료가",h("br"),h("b",{},list.length+"개")," 있어요"):h("p",{class:"big"},"지금은 발주할",h("br"),"재료가 ",h("b",{},"없어요")),h("p",{class:"sub"},"납품까지 걸리는 시간을 고려했어요.")),
+    h("div",{class:"sec"},h("h2",{},"발주할 재료"),h("small",{},list.length>2?"좌우로 넘겨보세요":"")),
+    list.length?car:h("div",{class:"dashed"},h("span",{class:"ic"},"✅"),h("div",{},h("p",{class:"t"},"모든 재료가 주문 기준 이상이에요."))),
+    h("div",{class:"sec"},h("h2",{},"입고를 기다리고 있어요"),h("small",{},S.orders.length+"건")),wait,
+    h("details",{},h("summary",{},"주문 기록 안내"),h("p",{},"주문 등록을 누르면 입고 대기 목록에 들어가요. 재료가 도착하면 ‘도착’을 누르거나 입고 탭에서 등록하세요.")));
+}
+
+/* 재고 */
+function renderStock(){
+  const v=$("v-stock");
+  const sw=h("button",{class:"switch",type:"button",role:"switch","aria-checked":String(S.pos),"aria-label":"POS 자동연계",onclick:()=>{S.pos=!S.pos;save();renderStock();}});
+  v.replaceChildren(
+    h("div",{class:"titlebar"},h("div",{class:"titleline"},h("h1",{},"우리 가게 재고"),h("span",{class:"badge"},"▦")),h("p",{class:"lead"},"판매 기록으로 계산한 추정 재고예요.")),
+    h("div",{class:"card"},h("div",{class:"row"},h("div",{},h("h2",{},"POS 자동연계"),h("p",{class:"desc"},S.pos?"ON · 가상 판매자료 체험":"OFF · 직접 입력")),sw)),
+    h("div",{class:"sec"},h("h2",{},"식재료별 재고"),h("small",{},S.items.length>2?"좌우로 넘겨보세요":"")),
+    h("div",{class:"carousel"},S.items.map(it=>h("div",{class:"ing"},head(it),
+      h("div",{class:"lbl"},"현재 재고"),h("div",{class:"bignum num"},q1(it.stock),h("small",{},it.unit)),
+      h("div",{class:"split"},
+        h("div",{class:"kv"},h("span",{},"입고 예정"),h("span",{class:"num"},q1(pending(it))+it.unit)),
+        h("div",{class:"kv"},h("span",{},"주문 기준"),h("span",{class:"num"},it.orderPoint+it.unit)),
+        h("div",{class:"kv"},h("span",{},"안전재고"),h("span",{class:"num"},it.safety+it.unit)),
+        h("div",{class:"kv"},h("span",{},"납품 기간"),h("span",{class:"num"},it.lead+"일"))),
+      h("button",{class:"btn sub",type:"button",onclick:()=>editItem(it)},"재고·기준 수정")))),
+    h("button",{class:"btn sub",type:"button",onclick:addItem},"＋ 식재료 추가"),
+    h("div",{class:"card fold"},h("details",{},h("summary",{},"재고는 어떻게 계산하나요?"),h("p",{},"POS 판매 기록에서 메뉴별 재료 사용량을 빼고, 입고된 양을 더해 추정해요. 실제와 다르면 ‘재고·기준 수정’에서 맞춰 주세요."))));
+}
+function editItem(it){
+  const f=(l,k)=>h("label",{class:"f"},l,h("input",{class:"field",type:"number",step:"0.1",id:"e_"+k,value:it[k]}));
+  const sh=h("div",{class:"sheet",onclick:e=>{if(e.target===sh)close();}},h("div",{class:"in"},h("h2",{},it.name+" 재고·기준 수정"),h("div",{class:"two"},f("현재 재고 ("+it.unit+")","stock"),f("주문 기준","orderPoint"),f("안전재고","safety"),f("납품 기간 (일)","lead")),
+    h("div",{class:"two"},h("button",{class:"btn sub",type:"button",onclick:close},"닫기"),h("button",{class:"btn",type:"button",onclick:()=>{["stock","orderPoint","safety","lead"].forEach(k=>{const n=parseFloat($("e_"+k).value);if(!isNaN(n)&&n>=0)it[k]=n;});save();renderAll();close();toast("저장했어요");}},"저장")),
+    h("button",{class:"ghost",type:"button",style:"justify-content:center;color:var(--warn)",onclick:e=>{const b=e.currentTarget;if(b.dataset.armed){S.items=S.items.filter(x=>x!==it);S.orders=S.orders.filter(o=>o.id!==it.id);save();renderAll();close();toast(it.name+" 삭제했어요");}else{b.dataset.armed="1";b.textContent="한 번 더 누르면 삭제돼요";}}},"이 식재료 삭제")));
+  document.body.append(sh);
+  function close(){sh.remove();}
+}
+const EMO={"kg":"🧺","L":"🫗","개":"🥬","단":"🌿","모":"🧈","판":"🥚","봉":"🛍️","병":"🍶"};
+function addItem(){
+  const inp=(l,id,attrs={})=>h("label",{class:"f"},l,h("input",Object.assign({class:"field",id},attrs)));
+  const unit=h("select",{class:"field",id:"n_unit"},Object.keys(EMO).map(u=>h("option",{value:u},u)));
+  const sh=h("div",{class:"sheet",onclick:e=>{if(e.target===sh)sh.remove();}},h("div",{class:"in"},h("h2",{},"식재료 추가"),
+    h("div",{class:"two"},inp("이름","n_name",{placeholder:"예: 감자"}),h("label",{class:"f"},"단위",unit)),
+    h("div",{class:"two"},inp("현재 재고","n_stock",{type:"number",step:"0.1",inputmode:"decimal",placeholder:"0"}),inp("주문 기준","n_op",{type:"number",step:"0.1",inputmode:"decimal",placeholder:"예: 5"}),inp("안전재고","n_sf",{type:"number",step:"0.1",inputmode:"decimal",placeholder:"예: 1"}),inp("납품 기간 (일)","n_ld",{type:"number",inputmode:"numeric",placeholder:"2"})),
+    h("div",{class:"two"},h("button",{class:"btn sub",type:"button",onclick:()=>sh.remove()},"닫기"),h("button",{class:"btn",type:"button",onclick:()=>{
+      const name=$("n_name").value.trim();if(!name){toast("이름을 입력해 주세요");$("n_name").focus();return;}
+      if(S.items.some(i=>i.name===name)){toast("이미 있는 식재료예요");return;}
+      const n=id=>Math.max(0,parseFloat($(id).value)||0),u=unit.value,op=n("n_op")||1;
+      S.items.push({id:"i"+Date.now(),name,emoji:EMO[u]||"🧺",unit:u,stock:n("n_stock"),orderPoint:op,safety:n("n_sf")||q1(op/5),lead:n("n_ld")||2,daily:q1(op/3)});
+      save();renderAll();sh.remove();toast(name+" 추가했어요");}},"추가"))));
+  document.body.append(sh);$("n_name").focus();
+}
+
+/* 입고 */
+function renderIn(){
+  const sel=$("mItem"),cur=sel.value;sel.replaceChildren(...S.items.map(it=>h("option",{value:it.id},it.name)));if(cur)sel.value=cur;
+  $("mUnit").textContent=(S.items.find(i=>i.id===sel.value)||S.items[0])?.unit||"kg";
+  const r=$("records");
+  r.replaceChildren(...(S.records.length?S.records.slice(0,10).map(x=>h("div",{class:"rec"},h("div",{},h("b",{},`${x.name} ${q1(x.qty)}${x.unit}`),h("div",{class:"s"},`${x.date} · ${x.src}${x.supplier?" · "+x.supplier:""}`)),h("span",{class:"num"},x.amt?won(x.amt):"-"))):[h("div",{class:"empty"},"아직 등록한 기록이 없어요.")]));
+}
+$("mItem").onchange=()=>renderIn();
+$("manual").onsubmit=e=>{e.preventDefault();
+  const it=S.items.find(i=>i.id===$("mItem").value),qty=parseFloat($("mQty").value),amt=parseFloat($("mAmt").value)||0;
+  if(!it||!(qty>0)){toast("입고 수량을 입력해 주세요");$("mQty").focus();return;}
+  addStock(it,qty,amt,"직접 입력");$("mQty").value="";$("mAmt").value="";save();renderAll();toast(`${it.name} ${qty}${it.unit} 반영했어요`);};
+function addStock(it,qty,amt,src,supplier){
+  it.stock=q1(it.stock+qty);
+  let left=qty;S.orders=S.orders.filter(o=>{if(o.id!==it.id||left<=0)return true;left-=o.qty;return false;});
+  S.records.unshift({date:md(KST()),name:it.name,qty,unit:it.unit,amt,src,supplier});
+}
+
+/* 사진 인식 */
+let sampleFn=null,canImg=false;
+(async()=>{try{sampleFn=await window.claude?.use?.("sample");}catch(e){}
+  if(sampleFn){const l=await sampleFn.limits().catch(()=>null);canImg=!!l?.images;if(l?.images)$("photo").accept=l.images.mediaTypes.join(",");}})();
+$("shootBtn").onclick=()=>$("photo").click();
+$("demoBtn").onclick=()=>{$("shot").hidden=true;showReview({supplier:"한결축산",items:[
+  {read:"돈앞다리 (냉장) 5kg",match:"돼지고기",qty:5,amount:59000},
+  {read:"포기김치 10kg 1박스",match:"김치",qty:10,amount:42000},
+  {read:"대파 1단 x3",match:null,qty:3,unit:"단",amount:9600}]},"예시");};
+const PROMPT=()=>`이 사진은 한국 식당이 받은 거래명세서나 영수증입니다. 입고 등록용으로 읽어 주세요.
+가게 식재료 목록(이름|단위): ${S.items.map(i=>i.name+"|"+i.unit).join(", ")}
+각 품목 줄마다: 목록에 있는 같은 식재료면 match에 목록 이름을 그대로, 없으면 null.
+qty는 그 식재료 단위 기준 숫자(예: "10kg 1박스"면 10), amount는 그 줄의 금액(원, 숫자).
+JSON 하나만 답하세요:
+{"supplier":"구매처 또는 null","items":[{"read":"사진에 적힌 품목 원문","match":"목록 이름 또는 null","qty":숫자,"unit":"단위","amount":숫자}]}
+식재료 구매 내역이 아니거나 읽을 수 없으면 {"supplier":null,"items":[]}.`;
+$("photo").onchange=async()=>{
+  const f=$("photo").files[0];if(!f)return;const st=$("stat");
+  $("shot").hidden=false;$("shotImg").src=URL.createObjectURL(f);st.className="stat";
+  if(!sampleFn||!canImg){st.className="stat err";st.textContent="이 화면에서는 사진 인식을 쓸 수 없어요. claude.ai에 로그인해서 열거나 ‘예시로 체험’을 눌러 보세요.";$("photo").value="";return;}
+  st.replaceChildren(h("span",{class:"spin"}),"명세서를 읽고 있어요 (10~40초)");$("shootBtn").disabled=true;
+  try{const r=await sampleFn.json(PROMPT(),{images:f});
+    if(!r||!Array.isArray(r.items)||!r.items.length){st.className="stat err";st.textContent="품목을 찾지 못했어요. 명세서 전체가 밝게 보이게 다시 찍어 주세요.";return;}
+    st.textContent=`${r.items.length}개 품목을 읽었어요. 아래에서 확인해 주세요.`;showReview(r,"AI 인식");
+  }catch(e){st.className="stat err";st.textContent=({not_granted:"Claude 사용을 허용해야 사진을 읽을 수 있어요.",rate_limited:"요청이 많아요. 잠시 뒤 다시 찍어 주세요.",image_rejected:"이 사진은 읽을 수 없어요. 다른 사진으로 해 주세요.",invalid_json:"내용을 정리하지 못했어요. 다시 찍어 주세요.",session_expired:"다시 로그인해 주세요."})[e?.code]||"읽기에 실패했어요. 다시 시도해 주세요.";}
+  finally{$("shootBtn").disabled=false;$("photo").value="";}
+};
+let draft=null;
+function showReview(r,src){
+  draft={lines:r.items.map(x=>{const it=S.items.find(i=>i.name===x.match);return{read:String(x.read||x.match||""),pick:it?it.id:"__new",newName:String(x.read||"").replace(/[\(\[].*?[\)\]]/g,"").replace(/[\d.]+\s*(kg|g|L|개|단|판|모|박스|x|×).*$/i,"").trim()||"새 식재료",unit:it?it.unit:(x.unit||"kg"),qty:Number(x.qty)||0,amt:Number(x.amount)||0};})};
+  $("rSupplier").value=r.supplier||"";$("reviewSrc").textContent=src;drawLines();$("review").hidden=false;$("review").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function drawLines(){
+  $("rLines").replaceChildren(...draft.lines.map((l,i)=>{
+    const sel=h("select",{class:"field",id:"rl"+i,"aria-label":"식재료"},S.items.map(it=>h("option",{value:it.id},it.name)),h("option",{value:"__new"},"＋ 새 식재료: "+l.newName),h("option",{value:"__skip"},"입고 안 함"));
+    sel.value=l.pick;sel.onchange=()=>{l.pick=sel.value;const it=S.items.find(x=>x.id===l.pick);if(it)l.unit=it.unit;drawLines();};
+    const q=h("input",{class:"field num",id:"rq"+i,type:"number",step:"0.1",inputmode:"decimal",value:l.qty});q.oninput=()=>{l.qty=parseFloat(q.value)||0;tot();};
+    const a=h("input",{class:"field num",id:"ra"+i,type:"number",inputmode:"numeric",value:l.amt});a.oninput=()=>{l.amt=parseFloat(a.value)||0;tot();};
+    return h("div",{class:"line"},h("div",{class:"src"},"사진: "+l.read),sel,h("div",{class:"two"},h("label",{class:"f"},`수량 (${l.unit})`,q),h("label",{class:"f"},"금액 (원)",a)));}));tot();
+}
+function tot(){$("rTotal").textContent=won(draft.lines.filter(l=>l.pick!=="__skip").reduce((s,l)=>s+l.amt,0));}
+$("cancelBtn").onclick=()=>{draft=null;$("review").hidden=true;};
+$("review").onsubmit=e=>{e.preventDefault();if(!draft)return;const sup=$("rSupplier").value.trim();let n=0;
+  draft.lines.forEach(l=>{if(l.pick==="__skip"||!(l.qty>0))return;let it=S.items.find(x=>x.id===l.pick);
+    if(!it){it={id:"i"+Date.now()+n,name:l.newName,emoji:"🧺",unit:l.unit,stock:0,orderPoint:l.qty,safety:q1(l.qty/5),lead:2,daily:q1(l.qty/7)};S.items.push(it);}
+    addStock(it,l.qty,l.amt,"사진 입력",sup);n++;});
+  if(!n){toast("반영할 재료가 없어요");return;}
+  save();draft=null;$("review").hidden=true;$("shot").hidden=true;renderAll();toast(`${n}개 재료를 재고에 반영했어요`);};
+
+/* 리포트 */
+const ANSWERS={"안전재고":"안전재고는 판매가 갑자기 늘거나 납품이 늦어질 때를 대비해 남겨 두는 최소한의 양이에요. 하루 1.5kg씩 쓰는 재료라면 1kg 정도를 안전재고로 잡아요.","납품":"납품 기간은 주문 후 재료가 도착하기까지 걸리는 날이에요. 요리온은 이 기간 동안 쓸 양까지 더해서 권장 발주량을 계산해요.","발주":"현재 재고와 입고 예정량의 합이 주문 기준보다 적으면 ‘발주 필요’로 표시돼요.","재고":"재고는 POS 판매 기록으로 사용량을 빼고 입고량을 더해 추정해요."};
+function renderReport(){
+  const v=$("v-report"),pork=S.items.find(i=>i.id==="pork")||S.items[0];
+  const log=h("div",{style:"display:grid;gap:10px"},h("div",{class:"chat"},"재고·발주·납품 기간에 대해 질문해 보세요."));
+  const inp=h("input",{class:"field",id:"askIn",placeholder:"안전재고는 왜 필요한가요?"});
+  const ask=()=>{const t=inp.value.trim()||inp.placeholder;const k=Object.keys(ANSWERS).find(k=>t.includes(k));log.append(h("div",{class:"chat me"},t),h("div",{class:"chat"},k?ANSWERS[k]:"체험용이라 재고·발주·납품·안전재고에 대한 예시 답변만 드릴 수 있어요."));inp.value="";};
+  inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();ask();}};
+  v.replaceChildren(
+    h("div",{class:"titlebar"},h("div",{class:"titleline"},h("h1",{},"한 달 돌아보기"),h("span",{class:"badge"},"✦")),h("p",{class:"lead"},"지난달 가상 운영기록을 정리했어요.")),
+    h("div",{class:"card stats"},h("div",{},h("span",{},"재료 부족"),h("b",{class:"num"},"3회")),h("div",{},h("span",{},"긴급 구매"),h("b",{class:"num"},"2회")),h("div",{},h("span",{},"평균 납품 소요"),h("b",{class:"num"},"1.8",h("small",{},"일")))),
+    h("div",{class:"sec"},h("h2",{},"발주 기준 피드백"),h("small",{},"가상 분석")),
+    h("div",{class:"card"},h("div",{class:"row"},h("h2",{style:"font-size:22px"},pork.name),h("span",{class:"pill"},"기준 점검")),
+      h("p",{style:"margin:0"},"지난달 재고 부족이 2회 기록됐어요."),
+      h("details",{},h("summary",{},"점검할 내용 보기"),h("p",{},"부족이 반복되면 안전재고나 주문 기준을 조금 올려 보세요. 예를 들어 안전재고를 1kg에서 1.5kg으로 올리면 주말 판매 증가에 대비할 수 있어요.")),
+      h("div",{class:"row"},h("span",{style:"font-size:18px"},"현재 안전재고"),h("b",{class:"num",style:"font-size:20px"},pork.safety+pork.unit)),
+      h("p",{class:"desc"},"부족 횟수는 가상 운영기록입니다."),
+      h("button",{class:"btn",type:"button",onclick:()=>editItem(pork)},"발주 기준 확인·수정")),
+    h("div",{class:"card"},h("div",{class:"row"},h("h2",{},"🤖 AI 운영 비서"),h("span",{class:"pill soft"},"체험용")),h("p",{class:"desc"},"AI 기반 · 예시 답변 체험"),log,
+      h("div",{class:"ask"},inp,h("button",{class:"btn",type:"button",onclick:ask},"질문"))),
+    h("div",{class:"card fold"},h("details",{},h("summary",{},"월간 리포트에 필요한 기록"),h("p",{},"주문 등록, 입고 기록, 재고 수정 내역이 쌓이면 다음 달 리포트에서 부족 횟수와 평균 납품 기간을 실제 기록으로 계산해요."))));
+}
+
+function renderAll(){renderToday();renderStock();renderIn();renderReport();}
+document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav.tabs button").forEach(x=>x.setAttribute("aria-selected",x===b));
+  ["today","stock","in","report"].forEach(k=>$("v-"+k).hidden=k!==b.dataset.v);
+  try{localStorage.setItem("baljuon-copy-tab",b.dataset.v)}catch(e){}window.scrollTo(0,0);});
+$("helpBtn").onclick=()=>$("help").hidden=false;
+$("helpClose").onclick=()=>$("help").hidden=true;
+$("help").onclick=e=>{if(e.target.id==="help")$("help").hidden=true;};
+
+/* 로그인 */
+const DEMOS=[{id:"gyeongsung",pw:"1234",store:"경성식당"},{id:"seokbunsik",pw:"1234",store:"경석분식"},{id:"gukbap",pw:"1234",store:"경성국밥"}];
+let ACC={},accMem=null,mode="login";
+const loadAcc=()=>{try{ACC=JSON.parse(localStorage.getItem("yorion-accounts"))||{}}catch(e){ACC=accMem||{}}};
+const saveAcc=()=>{accMem=ACC;try{localStorage.setItem("yorion-accounts",JSON.stringify(ACC))}catch(e){}};
+async function hashPw(id,pw){
+  try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("yorion:"+id+":"+pw));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");}
+  catch(e){return "p:"+btoa(unescape(encodeURIComponent(id+":"+pw)));}
+}
+const authErr=t=>{const e=$("aErr");e.textContent=t;e.hidden=!t;};
+function setMode(m){mode=m;const s=m==="signup";
+  $("authTitle").textContent=s?"가게 등록":"사장님 로그인";$("storeWrap").hidden=!s;$("pw2Wrap").hidden=!s;
+  $("aSubmit").textContent=s?"등록하고 시작하기":"로그인";
+  $("aMode").textContent=s?"이미 계정이 있어요. 로그인하기":"처음이신가요? 가게 등록하기";
+  $("aPw").autocomplete=s?"new-password":"current-password";authErr("");}
+function showAuth(){USER=null;S=SEED();
+  $("app").hidden=true;$("tabs").hidden=true;$("help").hidden=true;$("auth").hidden=false;
+  $("aPw").value="";$("aPw2").value="";setMode("login");window.scrollTo(0,0);}
+function enter(id){
+  USER=id;let d=null;
+  try{d=JSON.parse(localStorage.getItem("yorion-data-"+id));}catch(e){}
+  S=d&&d.v===2&&d.items?d:SEED(id);
+  $("storeName").textContent=ACC[id].store;$("who").textContent=`${ACC[id].store} · 아이디 ${id}`;
+  $("auth").hidden=true;$("app").hidden=false;$("tabs").hidden=false;
+  try{localStorage.setItem("yorion-session",id)}catch(e){}
+  renderAll();
+  let t="today";try{t=localStorage.getItem("baljuon-copy-tab")||"today"}catch(e){}
+  (document.querySelector(`[data-v="${t}"]`)||document.querySelector('[data-v="today"]')).click();
+}
+$("loginForm").onsubmit=async e=>{e.preventDefault();
+  const id=$("aId").value.trim().toLowerCase(),pw=$("aPw").value;
+  if(!id||!pw){authErr("아이디와 비밀번호를 입력해 주세요.");return;}
+  if(mode==="login"){
+    const a=ACC[id];
+    if(!a||a.pw!==await hashPw(id,pw)){authErr("아이디 또는 비밀번호가 맞지 않아요.");return;}
+    enter(id);return;
+  }
+  const store=$("aStore").value.trim();
+  if(!store){authErr("가게 이름을 입력해 주세요.");$("aStore").focus();return;}
+  if(!/^[a-z0-9_]{3,20}$/.test(id)){authErr("아이디는 영문 소문자, 숫자, _ 로 3~20자예요.");return;}
+  if(ACC[id]){authErr("이미 사용 중인 아이디예요.");return;}
+  if(pw.length<4){authErr("비밀번호는 4자 이상이에요.");return;}
+  if(pw!==$("aPw2").value){authErr("비밀번호 확인이 달라요.");$("aPw2").focus();return;}
+  ACC[id]={store,pw:await hashPw(id,pw)};saveAcc();enter(id);toast(`${store} 등록했어요`);
+};
+$("aMode").onclick=()=>setMode(mode==="login"?"signup":"login");
+$("demoList").replaceChildren(...DEMOS.map(d=>h("button",{type:"button",onclick:()=>{setMode("login");$("aId").value=d.id;$("aPw").value=d.pw;$("aSubmit").focus();}},h("span",{},d.store),h("small",{},`${d.id} / ${d.pw}`))));
+$("logoutBtn").onclick=()=>{try{localStorage.removeItem("yorion-session")}catch(e){}showAuth();toast("로그아웃했어요");};
+(async()=>{
+  loadAcc();
+  delete ACC.hansol;delete ACC.saebyeok;
+  for(const d of DEMOS){if(!ACC[d.id])ACC[d.id]={store:d.store,pw:await hashPw(d.id,d.pw)};else ACC[d.id].store=d.store;}
+  saveAcc();
+  let sid=null;try{sid=localStorage.getItem("yorion-session")}catch(e){}
+  if(sid&&ACC[sid])enter(sid);else showAuth();
+})();
+</script>
+
+</body>
+</html>
