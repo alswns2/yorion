@@ -158,6 +158,29 @@ nav.tabs button[aria-selected="true"] svg{stroke:var(--blue-hi)}
 .demo{display:grid;gap:10px}
 .demo button{display:flex;justify-content:space-between;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--fg);border-radius:18px;padding:12px 16px;font-size:16px;cursor:pointer;text-align:left}
 .demo button small{color:var(--muted);font-size:14px}
+
+/* 데스크톱: 왼쪽 사이드바 + 넓은 본문 */
+@media (min-width:900px){
+  nav.tabs{top:0;right:auto;bottom:0;left:0;width:220px;max-width:none;margin:0;grid-template-columns:1fr;align-content:start;gap:8px;border:0;border-right:1px solid var(--line);border-radius:0;padding:24px 14px;box-shadow:none}
+  nav.tabs::before{content:"요리온";font-weight:800;font-size:24px;letter-spacing:-.02em;color:var(--brand);padding:6px 16px 26px}
+  nav.tabs button{display:flex;justify-content:flex-start;align-items:center;gap:14px;padding:14px 16px;font-size:17px;border-radius:18px}
+  nav.tabs svg{width:24px;height:24px}
+  .app{max-width:none;margin:0 0 0 220px;padding-inline:40px;padding-block:24px 56px}
+  .app>.top,.app>.view{max-width:1040px;margin-inline:auto}
+  .top .logo{display:none}
+  .top .store{font-size:17px}
+  .carousel{grid-auto-flow:row;grid-auto-columns:unset;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));overflow:visible;scroll-snap-type:none}
+  .sec small{display:none}
+  #v-stock>.btn{justify-self:start;width:auto;padding-inline:32px}
+  #v-in,#v-report{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+  #v-in>*,#v-report>*{grid-column:1/-1}
+  #v-in>#scanCard,#v-in>#review,#v-in>#manual{grid-column:auto}
+  #v-report>:nth-child(4),#v-report>:nth-child(5){grid-column:auto}
+  .sheet{align-items:center;padding:24px}
+  .sheet .in{border:1px solid var(--line);border-radius:28px;max-width:520px}
+  .toast{bottom:32px;left:calc(50% + 110px)}
+  .auth{padding-block:72px}
+}
 </style>
 
 <div class="auth" id="auth" hidden>
