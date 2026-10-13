@@ -397,15 +397,34 @@ qty는 그 식재료 단위 기준 숫자(예: "10kg 1박스"면 10), amount는 
 JSON 하나만 답하세요:
 {"supplier":"구매처 또는 null","items":[{"read":"사진에 적힌 품목 원문","match":"목록 이름 또는 null","qty":숫자,"unit":"단위","amount":숫자}]}
 식재료 구매 내역이 아니거나 읽을 수 없으면 {"supplier":null,"items":[]}.`;
+/* 공개 주소용 사진 인식 서버(worker/index.js 배포 주소). 비어 있으면 claude.ai 안에서만 인식해요. */
+const RECEIPT_API="";
+async function shrinkImage(f){
+  const bmp=await createImageBitmap(f);
+  const sc=Math.min(1,1600/Math.max(bmp.width,bmp.height));
+  const c=document.createElement("canvas");c.width=Math.round(bmp.width*sc);c.height=Math.round(bmp.height*sc);
+  c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+  return c.toDataURL("image/jpeg",.85).split(",")[1];
+}
+async function readViaServer(f){
+  let data;try{data=await shrinkImage(f);}catch(e){throw {code:"image_rejected"};}
+  let res;
+  try{res=await fetch(RECEIPT_API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({image:data,mediaType:"image/jpeg",items:S.items.map(i=>({name:i.name,unit:i.unit}))})});}
+  catch(e){throw {code:"server_error"};}
+  if(res.status===429)throw {code:"rate_limited"};
+  if(!res.ok)throw {code:"server_error"};
+  return await res.json();
+}
 $("photo").onchange=async()=>{
   const f=$("photo").files[0];if(!f)return;const st=$("stat");
   $("shot").hidden=false;$("shotImg").src=URL.createObjectURL(f);st.className="stat";
-  if(!sampleFn||!canImg){st.className="stat err";st.textContent="이 화면에서는 사진 인식을 쓸 수 없어요. claude.ai에 로그인해서 열거나 ‘예시로 체험’을 눌러 보세요.";$("photo").value="";return;}
+  const viaClaude=!!(sampleFn&&canImg);
+  if(!viaClaude&&!RECEIPT_API){st.className="stat err";st.textContent="사진 인식 서버가 아직 연결되지 않았어요. ‘예시로 체험’을 눌러 보세요.";$("photo").value="";return;}
   st.replaceChildren(h("span",{class:"spin"}),"명세서를 읽고 있어요 (10~40초)");$("shootBtn").disabled=true;
-  try{const r=await sampleFn.json(PROMPT(),{images:f});
+  try{const r=viaClaude?await sampleFn.json(PROMPT(),{images:f}):await readViaServer(f);
     if(!r||!Array.isArray(r.items)||!r.items.length){st.className="stat err";st.textContent="품목을 찾지 못했어요. 명세서 전체가 밝게 보이게 다시 찍어 주세요.";return;}
     st.textContent=`${r.items.length}개 품목을 읽었어요. 아래에서 확인해 주세요.`;showReview(r,"AI 인식");
-  }catch(e){st.className="stat err";st.textContent=({not_granted:"Claude 사용을 허용해야 사진을 읽을 수 있어요.",rate_limited:"요청이 많아요. 잠시 뒤 다시 찍어 주세요.",image_rejected:"이 사진은 읽을 수 없어요. 다른 사진으로 해 주세요.",invalid_json:"내용을 정리하지 못했어요. 다시 찍어 주세요.",session_expired:"다시 로그인해 주세요."})[e?.code]||"읽기에 실패했어요. 다시 시도해 주세요.";}
+  }catch(e){st.className="stat err";st.textContent=({not_granted:"Claude 사용을 허용해야 사진을 읽을 수 있어요.",rate_limited:"요청이 많아요. 잠시 뒤 다시 찍어 주세요.",image_rejected:"이 사진은 읽을 수 없어요. 다른 사진으로 해 주세요.",invalid_json:"내용을 정리하지 못했어요. 다시 찍어 주세요.",session_expired:"다시 로그인해 주세요.",server_error:"인식 서버에 연결하지 못했어요. 잠시 뒤 다시 시도해 주세요."})[e?.code]||"읽기에 실패했어요. 다시 시도해 주세요.";}
   finally{$("shootBtn").disabled=false;$("photo").value="";}
 };
 let draft=null;
