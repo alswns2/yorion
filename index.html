@@ -182,6 +182,9 @@ nav.tabs button[aria-selected="true"] svg{stroke:var(--blue-hi)}
   .toast{bottom:32px;left:calc(50% + 110px)}
   .auth{padding-block:72px}
 }
+.rcimg{width:100%;max-height:60vh;object-fit:contain;border-radius:14px;border:1px solid var(--line);background:var(--field)}
+.rec .act{display:flex;gap:10px;align-items:center}
+.rec .act .ghost{padding:8px 14px;font-size:14px}
 </style>
 
 <div class="auth" id="auth" hidden>
@@ -240,6 +243,7 @@ nav.tabs button[aria-selected="true"] svg{stroke:var(--blue-hi)}
       <button class="btn" type="submit">확인하고 재고에 반영</button>
     </form>
 
+    <div class="card" id="rcBox" hidden><details open><summary>영수증 보관함</summary><div id="rcList"></div></details></div>
     <div class="card"><details id="recBox" open><summary>최근 기록</summary><div id="records"></div></details></div>
   </section>
   <section class="view" id="v-report" hidden></section>
@@ -293,7 +297,7 @@ const MENUS={
     ["onion","양파","🧅","kg",6,5,2,1,1.5],["scallion","대파","🌿","단",3,3,1,1,1]]
 };
 const SEED=id=>({v:2,pos:true,items:(MENUS[id]||MENUS._).map(([id,name,emoji,unit,stock,orderPoint,safety,lead,daily])=>({id,name,emoji,unit,stock,orderPoint,safety,lead,daily})),orders:[],records:[]});
-let S=SEED(),USER=null;
+let S=SEED(),USER=null,RC=[];
 const save=()=>{if(!USER)return;
   if(REMOTE){queuePush();return;}
   try{localStorage.setItem("yorion-data-"+USER,JSON.stringify(S))}catch(e){}};
@@ -403,15 +407,15 @@ JSON 하나만 답하세요:
 const API_BASE="";
 const REMOTE=!!API_BASE;
 let TOKEN=null;
-async function shrinkImage(f){
+async function shrinkImage(f,max=1600,q=.85){
   const bmp=await createImageBitmap(f);
-  const sc=Math.min(1,1600/Math.max(bmp.width,bmp.height));
+  const sc=Math.min(1,max/Math.max(bmp.width,bmp.height));
   const c=document.createElement("canvas");c.width=Math.round(bmp.width*sc);c.height=Math.round(bmp.height*sc);
   c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
-  return c.toDataURL("image/jpeg",.85).split(",")[1];
+  return c.toDataURL("image/jpeg",q).split(",")[1];
 }
-async function readViaServer(f){
-  let data;try{data=await shrinkImage(f);}catch(e){throw {code:"image_rejected"};}
+async function readViaServer(data){
+  if(!data)throw {code:"image_rejected"};
   const r=await api("/api/receipt",{method:"POST",body:JSON.stringify({image:data,mediaType:"image/jpeg",items:S.items.map(i=>({name:i.name,unit:i.unit}))})}).catch(()=>null);
   if(!r)throw {code:"server_error"};
   if(r.status===429)throw {code:"rate_limited"};
@@ -425,15 +429,17 @@ $("photo").onchange=async()=>{
   const viaClaude=!!(sampleFn&&canImg);
   if(!viaClaude&&!(REMOTE&&TOKEN)){st.className="stat err";st.textContent="사진 인식 서버가 아직 연결되지 않았어요. ‘예시로 체험’을 눌러 보세요.";$("photo").value="";return;}
   st.replaceChildren(h("span",{class:"spin"}),"명세서를 읽고 있어요 (10~40초)");$("shootBtn").disabled=true;
-  try{const r=viaClaude?await sampleFn.json(PROMPT(),{images:f}):await readViaServer(f);
+  let pic=null,arc=null;
+  if(!viaClaude){try{pic=await shrinkImage(f);arc=await shrinkImage(f,1280,.7);}catch(e){}}
+  try{const r=viaClaude?await sampleFn.json(PROMPT(),{images:f}):await readViaServer(pic);
     if(!r||!Array.isArray(r.items)||!r.items.length){st.className="stat err";st.textContent="품목을 찾지 못했어요. 명세서 전체가 밝게 보이게 다시 찍어 주세요.";return;}
-    st.textContent=`${r.items.length}개 품목을 읽었어요. 아래에서 확인해 주세요.`;showReview(r,"AI 인식");
+    st.textContent=`${r.items.length}개 품목을 읽었어요. 아래에서 확인해 주세요.`;showReview(r,"AI 인식",arc);
   }catch(e){st.className="stat err";st.textContent=({not_granted:"Claude 사용을 허용해야 사진을 읽을 수 있어요.",rate_limited:"요청이 많아요. 잠시 뒤 다시 찍어 주세요.",image_rejected:"이 사진은 읽을 수 없어요. 다른 사진으로 해 주세요.",invalid_json:"내용을 정리하지 못했어요. 다시 찍어 주세요.",session_expired:"다시 로그인해 주세요.",server_error:"인식 서버에 연결하지 못했어요. 잠시 뒤 다시 시도해 주세요."})[e?.code]||"읽기에 실패했어요. 다시 시도해 주세요.";}
   finally{$("shootBtn").disabled=false;$("photo").value="";}
 };
 let draft=null;
-function showReview(r,src){
-  draft={lines:r.items.map(x=>{const it=S.items.find(i=>i.name===x.match);return{read:String(x.read||x.match||""),pick:it?it.id:"__new",newName:String(x.read||"").replace(/[\(\[].*?[\)\]]/g,"").replace(/[\d.]+\s*(kg|g|L|개|단|판|모|박스|x|×).*$/i,"").trim()||"새 식재료",unit:it?it.unit:(x.unit||"kg"),qty:Number(x.qty)||0,amt:Number(x.amount)||0};})};
+function showReview(r,src,arc){
+  draft={image:arc||null,lines:r.items.map(x=>{const it=S.items.find(i=>i.name===x.match);return{read:String(x.read||x.match||""),pick:it?it.id:"__new",newName:String(x.read||"").replace(/[\(\[].*?[\)\]]/g,"").replace(/[\d.]+\s*(kg|g|L|개|단|판|모|박스|x|×).*$/i,"").trim()||"새 식재료",unit:it?it.unit:(x.unit||"kg"),qty:Number(x.qty)||0,amt:Number(x.amount)||0};})};
   $("rSupplier").value=r.supplier||"";$("reviewSrc").textContent=src;drawLines();$("review").hidden=false;$("review").scrollIntoView({behavior:"smooth",block:"start"});
 }
 function drawLines(){
@@ -451,7 +457,9 @@ $("review").onsubmit=e=>{e.preventDefault();if(!draft)return;const sup=$("rSuppl
     if(!it){it={id:"i"+Date.now()+n,name:l.newName,emoji:"🧺",unit:l.unit,stock:0,orderPoint:l.qty,safety:q1(l.qty/5),lead:2,daily:q1(l.qty/7)};S.items.push(it);}
     addStock(it,l.qty,l.amt,"사진 입력",sup);n++;});
   if(!n){toast("반영할 재료가 없어요");return;}
-  save();draft=null;$("review").hidden=true;$("shot").hidden=true;renderAll();toast(`${n}개 재료를 재고에 반영했어요`);};
+  const img=draft.image,meta={supplier:sup,total:draft.lines.filter(l=>l.pick!=="__skip"&&l.qty>0).reduce((t,l)=>t+l.amt,0),
+    items:draft.lines.filter(l=>l.pick!=="__skip"&&l.qty>0).map(l=>({name:(S.items.find(x=>x.id===l.pick)||{name:l.newName}).name,qty:l.qty,unit:l.unit,amount:l.amt}))};
+  save();if(img&&REMOTE&&TOKEN)uploadReceipt(img,meta);draft=null;$("review").hidden=true;$("shot").hidden=true;renderAll();toast(`${n}개 재료를 재고에 반영했어요`);};
 
 /* 리포트 */
 const ANSWERS={"안전재고":"안전재고는 판매가 갑자기 늘거나 납품이 늦어질 때를 대비해 남겨 두는 최소한의 양이에요. 하루 1.5kg씩 쓰는 재료라면 1kg 정도를 안전재고로 잡아요.","납품":"납품 기간은 주문 후 재료가 도착하기까지 걸리는 날이에요. 요리온은 이 기간 동안 쓸 양까지 더해서 권장 발주량을 계산해요.","발주":"현재 재고와 입고 예정량의 합이 주문 기준보다 적으면 ‘발주 필요’로 표시돼요.","재고":"재고는 POS 판매 기록으로 사용량을 빼고 입고량을 더해 추정해요."};
@@ -485,6 +493,45 @@ $("helpBtn").onclick=()=>$("help").hidden=false;
 $("helpClose").onclick=()=>$("help").hidden=true;
 $("help").onclick=e=>{if(e.target.id==="help")$("help").hidden=true;};
 
+/* 영수증 보관함 (서버 모드) */
+const fmtTime=t=>{const d=new Date(String(t).replace(" ","T")+"Z");if(isNaN(d))return "";const k=new Date(d.getTime()+9*3600e3);
+  return md(k)+" "+String(k.getUTCHours()).padStart(2,"0")+":"+String(k.getUTCMinutes()).padStart(2,"0");};
+function drawReceipts(){
+  const box=$("rcBox");box.hidden=!(REMOTE&&TOKEN);if(box.hidden)return;
+  $("rcList").replaceChildren(...(RC.length?RC.map(x=>h("div",{class:"rec"},
+    h("div",{},h("b",{},x.supplier||"구매처 미입력"),h("div",{class:"s"},`${fmtTime(x.created_at)} · ${x.count}개 품목`)),
+    h("div",{class:"act"},h("span",{class:"num"},x.total?won(x.total):"-"),h("button",{class:"ghost",type:"button",onclick:()=>viewReceipt(x)},"사진 보기")))):
+    [h("div",{class:"empty"},"저장된 영수증이 없어요. 사진으로 입고하면 여기에 보관돼요.")]));
+}
+async function loadReceipts(){
+  if(!(REMOTE&&TOKEN))return;
+  const r=await api("/api/receipts").catch(()=>null);
+  if(r&&r.ok){RC=r.body.receipts||[];drawReceipts();}
+}
+async function uploadReceipt(image,m){
+  const r=await api("/api/receipts",{method:"POST",body:JSON.stringify({image,supplier:m.supplier,items:m.items,total:m.total})}).catch(()=>null);
+  if(r&&r.ok){toast("영수증 사진을 보관함에 저장했어요");loadReceipts();}
+  else toast("사진 저장에 실패했어요. 재고에는 반영됐어요.");
+}
+async function viewReceipt(x){
+  const img=h("img",{class:"rcimg",alt:"영수증 사진"});
+  const msg=h("p",{class:"stat"},"사진을 불러오고 있어요");
+  const close=()=>sh.remove();
+  const del=h("button",{class:"ghost",type:"button",style:"justify-content:center;color:var(--warn)",onclick:async e=>{
+    const b=e.currentTarget;
+    if(!b.dataset.armed){b.dataset.armed="1";b.textContent="한 번 더 누르면 삭제돼요";return;}
+    const r=await api("/api/receipts/"+x.id,{method:"DELETE"}).catch(()=>null);
+    if(r&&r.ok){close();loadReceipts();toast("영수증을 삭제했어요");}else toast("삭제하지 못했어요");
+  }},"이 영수증 삭제");
+  const sh=h("div",{class:"sheet",onclick:e=>{if(e.target===sh)close();}},h("div",{class:"in"},
+    h("h2",{},x.supplier||"구매처 미입력"),h("p",{},`${fmtTime(x.created_at)} · ${x.count}개 품목${x.total?" · "+won(x.total):""}`),
+    msg,img,h("div",{class:"two"},h("button",{class:"btn sub",type:"button",onclick:close},"닫기"),del)));
+  document.body.append(sh);
+  const r=await api(`/api/receipts/${x.id}/image`).catch(()=>null);
+  if(r&&r.ok&&r.body.image){img.src="data:image/jpeg;base64,"+r.body.image;msg.remove();}
+  else{msg.className="stat err";msg.textContent="사진을 불러오지 못했어요.";img.remove();}
+}
+
 /* 로그인 */
 const DEMOS=[{id:"gyeongsung",pw:"1234",store:"경성식당"},{id:"seokbunsik",pw:"1234",store:"경석분식"},{id:"gukbap",pw:"1234",store:"경성국밥"}];
 let ACC={},accMem=null,mode="login",REV=0,saveT=null,saving=false,dirty=false;
@@ -505,7 +552,7 @@ function setMode(m){mode=m;const s=m==="signup";
   $("aSubmit").textContent=s?"등록하고 시작하기":"로그인";
   $("aMode").textContent=s?"이미 계정이 있어요. 로그인하기":"처음이신가요? 가게 등록하기";
   $("aPw").autocomplete=s?"new-password":"current-password";authErr("");}
-function showAuth(){USER=null;TOKEN=null;S=SEED();clearTimeout(saveT);dirty=false;
+function showAuth(){USER=null;TOKEN=null;S=SEED();RC=[];clearTimeout(saveT);dirty=false;
   $("app").hidden=true;$("tabs").hidden=true;$("help").hidden=true;$("auth").hidden=false;
   $("aPw").value="";$("aPw2").value="";setMode("login");window.scrollTo(0,0);}
 function openApp(id,store){
@@ -544,6 +591,7 @@ async function pull(){
   try{const r=await api("/api/data");
     if(r.status===401){forgetLogin();showAuth();toast("다시 로그인해 주세요");return;}
     if(r.ok&&r.body.rev>REV&&!dirty&&!saving)adopt(r.body);
+    if(!$("v-in").hidden)loadReceipts();
   }catch(e){}
 }
 function forgetLogin(){try{localStorage.removeItem("yorion-auth")}catch(e){}}
@@ -555,6 +603,7 @@ async function enterRemote(a){
   S=r.body.state&&r.body.state.items?r.body.state:SEED(a.id);
   REV=r.body.rev||0;dirty=false;
   openApp(a.id,a.store);
+  drawReceipts();loadReceipts();
   if(!r.body.state)queuePush();
   return true;
 }

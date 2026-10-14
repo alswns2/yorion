@@ -6,6 +6,8 @@ const ALLOW_ORIGINS = ["https://alswns2.github.io", "http://localhost:8000"];
 const MODEL = "claude-opus-5-5";
 const MAX_IMAGE_CHARS = 6_000_000; // base64 약 4.5MB
 const MAX_STATE_CHARS = 400_000;
+const MAX_ARCHIVE_CHARS = 1_400_000; // D1 한 행 2MB 한도 안쪽
+const KEEP_RECEIPTS = 50;
 const TOKEN_DAYS = 30;
 const DEMOS = { gyeongsung: "경성식당", seokbunsik: "경석분식", gukbap: "경성국밥" };
 const DEMO_PW = "1234";
@@ -47,7 +49,7 @@ export default {
     const origin = req.headers.get("origin") || "";
     const cors = {
       "access-control-allow-origin": ALLOW_ORIGINS.includes(origin) ? origin : ALLOW_ORIGINS[0],
-      "access-control-allow-methods": "GET, POST, PUT, OPTIONS",
+      "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
       "access-control-allow-headers": "content-type, authorization",
       vary: "origin",
     };
@@ -105,6 +107,39 @@ export default {
       if (r.meta?.changes === 1) return send({ rev: rev + 1 });
       const cur = await env.DB.prepare("SELECT state, rev FROM stores WHERE id = ?").bind(uid).first();
       return send({ error: true, message: "다른 기기에서 먼저 바뀌었어요.", rev: cur?.rev ?? 0, state: cur?.state ? JSON.parse(cur.state) : null }, 409);
+    }
+
+    // ---- 영수증 보관함 (사진은 D1에 저장, 가게별로 최근 50장) ----
+    if (path === "/api/receipts" && req.method === "GET") {
+      const { results } = await env.DB.prepare("SELECT id, supplier, total, items, created_at FROM receipts WHERE store_id = ? ORDER BY id DESC LIMIT ?").bind(uid, KEEP_RECEIPTS).all();
+      const receipts = (results || []).map((r) => {
+        let n = 0; try { n = JSON.parse(r.items).length; } catch {}
+        return { id: r.id, supplier: r.supplier, total: r.total, count: n, created_at: r.created_at };
+      });
+      return send({ receipts });
+    }
+    if (path === "/api/receipts" && req.method === "POST") {
+      const b = await readJson();
+      const image = b?.image;
+      if (typeof image !== "string" || !image || image.length > MAX_ARCHIVE_CHARS || !/^[A-Za-z0-9+/=]+$/.test(image)) return fail("사진을 저장할 수 없어요.", 400);
+      const items = (Array.isArray(b.items) ? b.items : []).slice(0, 40).map((x) => ({
+        name: clean(x?.name, 30), qty: num(x?.qty), unit: clean(x?.unit, 6), amount: num(x?.amount),
+      }));
+      const r = await env.DB.prepare("INSERT INTO receipts (store_id, supplier, total, items, image) VALUES (?, ?, ?, ?, ?)")
+        .bind(uid, b.supplier ? clean(b.supplier, 40) : null, Math.round(num(b.total)), JSON.stringify(items), image).run();
+      await env.DB.prepare("DELETE FROM receipts WHERE store_id = ? AND id NOT IN (SELECT id FROM receipts WHERE store_id = ? ORDER BY id DESC LIMIT ?)")
+        .bind(uid, uid, KEEP_RECEIPTS).run();
+      return send({ id: r.meta?.last_row_id ?? null });
+    }
+    const rm = path.match(/^\/api\/receipts\/(\d+)(\/image)?$/);
+    if (rm && req.method === "GET" && rm[2]) {
+      const row = await env.DB.prepare("SELECT image FROM receipts WHERE id = ? AND store_id = ?").bind(Number(rm[1]), uid).first();
+      if (!row) return fail("사진을 찾을 수 없어요.", 404);
+      return send({ image: row.image });
+    }
+    if (rm && req.method === "DELETE" && !rm[2]) {
+      await env.DB.prepare("DELETE FROM receipts WHERE id = ? AND store_id = ?").bind(Number(rm[1]), uid).run();
+      return send({ ok: true });
     }
 
     // ---- 명세서 사진 인식 ----
