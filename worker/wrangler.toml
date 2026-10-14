@@ -1,3 +1,8 @@
-name = "yorion-receipt"
+name = "yorion-api"
 main = "index.js"
 compatibility_date = "2026-10-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "yorion"
+database_id = "여기에-wrangler-d1-create-결과의-database_id"
